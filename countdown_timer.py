@@ -1,5 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
+import pygame
+import json
+import os
 
 class CountdownTimer:
     def __init__(self, master):
@@ -9,6 +12,12 @@ class CountdownTimer:
 
         self.time_left = 0
         self.running = False
+
+        # Initialize pygame mixer
+        pygame.mixer.init()
+
+        # Load saved times
+        self.load_times()
 
         self.create_widgets()
 
@@ -36,7 +45,7 @@ class CountdownTimer:
         self.saved_time_buttons = []
         for i in range(6):
             entry = tk.Entry(saved_times_frame, width=10, justify='center')
-            entry.insert(0, "00:00:00")
+            entry.insert(0, self.saved_times[i])
             entry.grid(row=i//3*2, column=i%3, padx=5, pady=5)
             entry.bind('<FocusOut>', lambda e, i=i: self.save_time(i))
             self.saved_time_entries.append(entry)
@@ -86,6 +95,20 @@ class CountdownTimer:
                 self.time_entry.delete(0, tk.END)
                 self.time_entry.insert(0, time_string)
                 self.time_entry.config(state='disabled')
+                
+                if self.time_left == 3:
+                    pygame.mixer.music.load("sounds/t-0.wav")  # Load the sound file for t-03
+                    pygame.mixer.music.play()  # Play the sound file
+                elif self.time_left == 2:
+                    pygame.mixer.music.load("sounds/t-0.wav")  # Load the sound file for t-02
+                    pygame.mixer.music.play()  # Play the sound file
+                elif self.time_left == 1:
+                    pygame.mixer.music.load("sounds/t-0.wav")  # Load the sound file for t-01
+                    pygame.mixer.music.play()  # Play the sound file
+                elif self.time_left == 0:
+                    pygame.mixer.music.load("sounds/alert.wav")  # Load the sound file for t-00
+                    pygame.mixer.music.play()  # Play the sound file
+                
                 self.time_left -= 1
                 self.master.after(1000, self.update)
             else:
@@ -101,6 +124,8 @@ class CountdownTimer:
                 formatted_time = f"{hours:02d}:{mins:02d}:{secs:02d}"
                 self.saved_time_entries[button_index].delete(0, tk.END)
                 self.saved_time_entries[button_index].insert(0, formatted_time)
+                self.saved_times[button_index] = formatted_time
+                self.save_times()
             else:
                 raise ValueError
         except ValueError:
@@ -125,6 +150,19 @@ class CountdownTimer:
                 raise ValueError("Invalid time format")
         except ValueError as e:
             tk.messagebox.showerror("Error", str(e))
+
+    def save_times(self):
+        if not os.path.exists("data"):
+            os.makedirs("data")
+        with open("data/saved_times.json", "w") as file:
+            json.dump(self.saved_times, file)
+
+    def load_times(self):
+        if os.path.exists("data/saved_times.json"):
+            with open("data/saved_times.json", "r") as file:
+                self.saved_times = json.load(file)
+        else:
+            self.saved_times = ["00:00:00"] * 6
 
 if __name__ == "__main__":
     root = tk.Tk()
